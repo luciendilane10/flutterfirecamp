@@ -144,7 +144,6 @@ if (allTasks.isEmpty) {
   }
 
   repo.add(newTask);
-  newTask.create();
 }
 
 void _handleCompleteTask(JsonTaskRepo repo) {
