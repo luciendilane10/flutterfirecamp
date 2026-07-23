@@ -21,8 +21,8 @@ void main() {
     }
   });
 
-  group('Tests Unitaires - Gestionnaire de Tâches & Persistance', () {
-    test('1. Création et propriétés par défaut de SimpleTask et UrgentTask', () {
+  group('Suite de tests unitaires - Gestionnaire de Tâches', () {
+    test('1. Instanciation correcte de SimpleTask et UrgentTask', () {
       final simple = SimpleTask(
         id: 1,
         title: 'Tâche simple',
@@ -36,7 +36,6 @@ void main() {
 
       expect(simple.isCompleted, false);
       expect(simple.priority, Priority.low);
-
       expect(urgent.priority, Priority.high);
       expect(urgent.reason, 'Urgence médicale');
     });
@@ -71,7 +70,7 @@ void main() {
       expect(sorted[2].priority, Priority.low);
     });
 
-    test('4. Modification du statut et mise à jour dans le Repository', () {
+    test('4. Modification du statut et mise à jour', () {
       final task = SimpleTask(id: 1, title: 'Test Update', priority: Priority.medium);
       repo.add(task);
 
@@ -82,14 +81,13 @@ void main() {
       expect(updatedTask.isCompleted, true);
     });
 
-    test('5. Suppression d\'une tâche et levée d\'exception TaskNotFoundException', () {
+    test('5. Suppression d\'une tâche et gestion d\'exception', () {
       final task = SimpleTask(id: 1, title: 'A supprimer', priority: Priority.low);
       repo.add(task);
 
       repo.delete(1);
       expect(repo.getAll().length, 0);
 
-      // Vérifie que la suppression d'un ID inexistant lève bien l'exception attendue
       expect(() => repo.delete(999), throwsA(isA<TaskNotFound>()));
     });
   });

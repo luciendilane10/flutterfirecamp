@@ -35,7 +35,7 @@ class UrgentTask extends Task {
       'title':title,
       'type':'urgent',
       'priority':priority.name,
-      'date':dueDate?.toIso8601String(),
+      'dueDate':dueDate?.toIso8601String(),
       'isCompleted':isCompleted
     };
   }
