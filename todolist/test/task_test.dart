@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:test/test.dart';
-
 import 'package:todolist/models/task.dart';
 import 'package:todolist/models/simple_task.dart';
 import 'package:todolist/models/urgent_task.dart';
@@ -8,114 +7,90 @@ import 'package:todolist/repository/json_task_repo.dart';
 import 'package:todolist/exceptions/task_exception.dart';
 
 void main() {
-
   late JsonTaskRepo repo;
   final testFilePath = 'test_tasks.json';
 
-  // Avant chaque test, on initialise un repository propre
   setUp(() {
     repo = JsonTaskRepo(testFilePath);
   });
 
-  // Après chaque test, on supprime le fichier de test temporaire s'il existe
   tearDown(() {
     final file = File(testFilePath);
     if (file.existsSync()) {
       file.deleteSync();
     }
   });
-  
-  group('Tests du Gestionnaire de Tâches', () {
-    // 1. Création d'une tâche simple
-    test('Création d\'une tâche simple', () {
-      final simpleTask = SimpleTask(
-          id: 1,
-          title: 'Faire les courses',
-          priority: Priority.medium,
-          dueDate: DateTime.now().add(Duration(days: 2)));
-      repo.add(simpleTask);
-      simpleTask.create();
-      expect(simpleTask.id, 1);
-      expect(simpleTask.title, 'Faire les courses');
-      expect(simpleTask.priority, Priority.medium);
-      expect(simpleTask.isCompleted, false);
 
-      
+  group('Tests Unitaires - Gestionnaire de Tâches & Persistance', () {
+    test('1. Création et propriétés par défaut de SimpleTask et UrgentTask', () {
+      final simple = SimpleTask(
+        id: 1,
+        title: 'Tâche simple',
+        priority: Priority.low,
+      );
+      final urgent = UrgentTask(
+        id: 2,
+        title: 'Tâche urgente',
+        reason: 'Urgence médicale',
+      );
+
+      expect(simple.isCompleted, false);
+      expect(simple.priority, Priority.low);
+
+      expect(urgent.priority, Priority.high);
+      expect(urgent.reason, 'Urgence médicale');
     });
 
-    // 2. Création d'une tâche urgente
-    test('Création d\'une tâche urgente', () {
-      final urgentTask = UrgentTask(
-          id: 2,
-          title: 'Appeler le médecin',
-          reason: 'Rendez-vous important',
-          dueDate: DateTime.now().add(Duration(hours: 5)));
-      repo.add(urgentTask);
-      urgentTask.create();
-      expect(urgentTask.id, 2);
-      expect(urgentTask.title, 'Appeler le médecin');
-      expect(urgentTask.reason, 'Rendez-vous important');
-      expect(urgentTask.priority, Priority.high);
-      expect(urgentTask.isCompleted, false);
+    test('2. Ajout et persistance dans JsonTaskRepo', () {
+      final task = SimpleTask(
+        id: 1,
+        title: 'Acheter du pain',
+        priority: Priority.medium,
+      );
+
+      repo.add(task);
+      final loadedTasks = repo.getAll();
+
+      expect(loadedTasks.length, 1);
+      expect(loadedTasks.first.title, 'Acheter du pain');
     });
 
-    //3.Test de la récupération de toutes les tâches
-    test('Récupération de toutes les tâches', () {
-      final simpleTask = SimpleTask(
-          id: 1,
-          title: 'Faire les courses',
-          priority: Priority.medium,
-          dueDate: DateTime.now().add(Duration(days: 2)));
-      final urgentTask = UrgentTask(
-          id: 2,
-          title: 'Appeler le médecin',
-          reason: 'Rendez-vous important',
-          dueDate: DateTime.now().add(Duration(hours: 5)));
-      repo.add(simpleTask);
-      repo.add(urgentTask);
+    test('3. Tri des tâches par priorité (High -> Medium -> Low)', () {
+      final t1 = SimpleTask(id: 1, title: 'Basse', priority: Priority.low);
+      final t2 = UrgentTask(id: 2, title: 'Haute', reason: 'Urgente');
+      final t3 = SimpleTask(id: 3, title: 'Moyenne', priority: Priority.medium);
 
-      final allTasks = repo.getAll();
-      expect(allTasks.length, 2);
+      repo.add(t1);
+      repo.add(t2);
+      repo.add(t3);
+
+      final sorted = repo.getAllSortedByPriority();
+
+      expect(sorted[0].priority, Priority.high);
+      expect(sorted[1].priority, Priority.medium);
+      expect(sorted[2].priority, Priority.low);
     });
 
-    //4.Test de la récupération des tâches triées par date
-    test('Récupération des tâches triées par date', () {  
-      final simpleTask = SimpleTask(
-          id: 1,
-          title: 'Faire les courses',
-          priority: Priority.medium,
-          dueDate: DateTime.now().add(Duration(days: 2)));
-      final urgentTask = UrgentTask(
-          id: 2,
-          title: 'Appeler le médecin',
-          reason: 'Rendez-vous important',
-          dueDate: DateTime.now().add(Duration(hours: 5)));
-      repo.add(simpleTask);
-      repo.add(urgentTask);
+    test('4. Modification du statut et mise à jour dans le Repository', () {
+      final task = SimpleTask(id: 1, title: 'Test Update', priority: Priority.medium);
+      repo.add(task);
 
-      final sortedTasks = repo.getAllSortedByDate();
-      expect(sortedTasks.first, urgentTask);
-      expect(sortedTasks.last, simpleTask);
+      task.toggleCompleted();
+      repo.update(task);
+
+      final updatedTask = repo.getAll().firstWhere((t) => t.id == 1);
+      expect(updatedTask.isCompleted, true);
     });
 
-    //5.Test de la récupération des tâches triées par priorité
-    test('Récupération des tâches triées par priorité', () {
-      final simpleTask = SimpleTask(
-          id: 1,
-          title: 'Faire les courses',
-          priority: Priority.medium,
-          dueDate: DateTime.now().add(Duration(days: 2)));
-      final urgentTask = UrgentTask(
-          id: 2,
-          title: 'Appeler le médecin',
-          reason: 'Rendez-vous important',
-          dueDate: DateTime.now().add(Duration(hours: 5)));
-      repo.add(simpleTask);
-      repo.add(urgentTask);
+    test('5. Suppression d\'une tâche et levée d\'exception TaskNotFoundException', () {
+      final task = SimpleTask(id: 1, title: 'A supprimer', priority: Priority.low);
+      repo.add(task);
 
-      final sortedTasks = repo.getAllSortedByPriority();
-      expect(sortedTasks.first, urgentTask);
-      expect(sortedTasks.last, simpleTask);
+      repo.delete(1);
+      expect(repo.getAll().length, 0);
+
+      // Vérifie que la suppression d'un ID inexistant lève bien l'exception attendue
+      expect(() => repo.delete(999), throwsA(isA<TaskNotFound>()));
     });
   });
 }

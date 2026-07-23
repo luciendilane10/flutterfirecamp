@@ -181,7 +181,7 @@ void _handleDeleteTask(JsonTaskRepo repo) {
   }
 
   try {
-    repo.remove(id);
+    repo.delete(id);
     print('Tâche #$id supprimée avec succès !');
   } on TaskNotFound catch (e) {
     print('Erreur : ${e.message}');

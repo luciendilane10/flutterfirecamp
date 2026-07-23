@@ -28,7 +28,7 @@ class JsonTaskRepo implements Repository<Task> {
   }
 
   @override
-  void remove(int id) {
+  void delete(int id) {
     final index = _tasks.indexWhere((task) => task.id == id);
     if (index != -1) {
       _tasks.removeAt(index);
