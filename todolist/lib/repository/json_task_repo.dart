@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:convert';
 
+import 'package:todolist/models/simple_task.dart';
+
 import '../models/task.dart';
 import '../models/urgent_task.dart';
 import '../exceptions/task_exception.dart';
@@ -79,16 +81,57 @@ class JsonTaskRepo implements Repository<Task> {
       final reason = map['reason']?.toString() ?? 'Urgence non spécifiée';
       final isCompleted = map['isCompleted'] == true;
 
-      return UrgentTask(
-        id: id,
-        title: title,
-        reason: reason,
-        priority: Priority.high,
-        isCompleted: isCompleted,
+      //Extraction de la date en toute sécurité
+      final dueDateString = map['date']?.toString();
+      final dueDate = dueDateString != null ? DateTime.tryParse(dueDateString) : null;
+
+      // Conversion de la priorité en enum
+      final priorityString = map['priority']?.toString();
+      final priority = Priority.values.firstWhere(
+        (p) => p.name == priorityString,
+        orElse: () => Priority.low,
       );
+      
+      // Création de la tâche en fonction du type
+      final type = map['type']?.toString(); 
+      if (type == 'urgent') {
+        return UrgentTask(
+          id: id,
+          title: title,
+          reason: reason,
+          isCompleted: isCompleted,
+          dueDate: dueDate,
+        );
+      } else {
+        return SimpleTask(
+          id: id,
+          title: title,
+          priority: priority,
+          isCompleted: isCompleted,
+          dueDate: dueDate,
+        );
+      }
     }).toList();
   } catch (e) {
     _tasks = [];
   }
-}
+  }
+
+  List<Task> getAllSortedByDate() {
+    final sortedTasks = List<Task>.from(_tasks);
+    sortedTasks.sort((a, b) {
+      if (a.dueDate == null && b.dueDate == null) return 0;
+      if (a.dueDate == null) return 1;
+      if (b.dueDate == null) return -1;
+      return a.dueDate!.compareTo(b.dueDate!);
+    });
+    return sortedTasks;
+  }
+
+  List<Task> getAllSortedByPriority() {
+    final sortedTasks = List<Task>.from(_tasks);
+    sortedTasks.sort((a, b) => b.priority.index.compareTo(a.priority.index));
+    return sortedTasks;
+  }
+
 }

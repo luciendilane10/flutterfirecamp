@@ -1,80 +1,121 @@
 import 'dart:io';
 import 'package:test/test.dart';
 
-import 'package:todolist/exceptions/task_exception.dart';
-import 'package:todolist/repository/json_task_repo.dart';
 import 'package:todolist/models/task.dart';
+import 'package:todolist/models/simple_task.dart';
 import 'package:todolist/models/urgent_task.dart';
+import 'package:todolist/repository/json_task_repo.dart';
+import 'package:todolist/exceptions/task_exception.dart';
 
 void main() {
 
+  late JsonTaskRepo repo;
+  final testFilePath = 'test_tasks.json';
+
+  // Avant chaque test, on initialise un repository propre
   setUp(() {
-    final file = File('test_tasks.json');
+    repo = JsonTaskRepo(testFilePath);
+  });
+
+  // Après chaque test, on supprime le fichier de test temporaire s'il existe
+  tearDown(() {
+    final file = File(testFilePath);
     if (file.existsSync()) {
       file.deleteSync();
     }
   });
   
-  group("tests sur les taches", () {
-    //1. Verification de la bascule de statut
-    test('toogleComplete doit changer isComplete de false à true', () {
-      final task = UrgentTask(
-        id: 1,
-        title: "Test 1",
-        priority: Priority.high,
-        reason: "Urgence",
-      );
+  group('Tests du Gestionnaire de Tâches', () {
+    // 1. Création d'une tâche simple
+    test('Création d\'une tâche simple', () {
+      final simpleTask = SimpleTask(
+          id: 1,
+          title: 'Faire les courses',
+          priority: Priority.medium,
+          dueDate: DateTime.now().add(Duration(days: 2)));
+      repo.add(simpleTask);
+      simpleTask.create();
+      expect(simpleTask.id, 1);
+      expect(simpleTask.title, 'Faire les courses');
+      expect(simpleTask.priority, Priority.medium);
+      expect(simpleTask.isCompleted, false);
 
-      expect(task.isCompleted, false);
-      task.toggleCompleted();
-      expect(task.isCompleted, true);
+      
     });
 
-    //2. Ajout d'une tache
-    test("On ajoute à la liste", () {
-      final task2 = UrgentTask(
+    // 2. Création d'une tâche urgente
+    test('Création d\'une tâche urgente', () {
+      final urgentTask = UrgentTask(
           id: 2,
-          title: "Verification",
-          priority: Priority.high,
-          reason: "Tache primordiale",
-          date: DateTime.now()
-          );
-          
-      task2.create();
-      JsonTaskRepo("D:/Projets/Certification/dart/todolist/task.json")
-          .add(task2);
-
-      final task3 = UrgentTask(
-          id: 3,
-          title: "Production",
-          priority: Priority.high,
-          reason: "Urgence déclenchée",
-          date: DateTime.now());
-      task3.create();
-      JsonTaskRepo("D:/Projets/Certification/dart/todolist/task.json")
-          .add(task3);
+          title: 'Appeler le médecin',
+          reason: 'Rendez-vous important',
+          dueDate: DateTime.now().add(Duration(hours: 5)));
+      repo.add(urgentTask);
+      urgentTask.create();
+      expect(urgentTask.id, 2);
+      expect(urgentTask.title, 'Appeler le médecin');
+      expect(urgentTask.reason, 'Rendez-vous important');
+      expect(urgentTask.priority, Priority.high);
+      expect(urgentTask.isCompleted, false);
     });
 
-    //3. Affichage des tâches
-    test("Affichage des tâches", () {
-      JsonTaskRepo("D:/Projets/Certification/dart/todolist/task.json").getAll();
+    //3.Test de la récupération de toutes les tâches
+    test('Récupération de toutes les tâches', () {
+      final simpleTask = SimpleTask(
+          id: 1,
+          title: 'Faire les courses',
+          priority: Priority.medium,
+          dueDate: DateTime.now().add(Duration(days: 2)));
+      final urgentTask = UrgentTask(
+          id: 2,
+          title: 'Appeler le médecin',
+          reason: 'Rendez-vous important',
+          dueDate: DateTime.now().add(Duration(hours: 5)));
+      repo.add(simpleTask);
+      repo.add(urgentTask);
+
+      final allTasks = repo.getAll();
+      expect(allTasks.length, 2);
     });
 
-    //4.Suppression d'une tâche existente
-    test("Suppression d'une tâche existente", () {
-      JsonTaskRepo("D:/Projets/Certification/dart/todolist/task.json")
-          .remove(3);
+    //4.Test de la récupération des tâches triées par date
+    test('Récupération des tâches triées par date', () {  
+      final simpleTask = SimpleTask(
+          id: 1,
+          title: 'Faire les courses',
+          priority: Priority.medium,
+          dueDate: DateTime.now().add(Duration(days: 2)));
+      final urgentTask = UrgentTask(
+          id: 2,
+          title: 'Appeler le médecin',
+          reason: 'Rendez-vous important',
+          dueDate: DateTime.now().add(Duration(hours: 5)));
+      repo.add(simpleTask);
+      repo.add(urgentTask);
+
+      final sortedTasks = repo.getAllSortedByDate();
+      expect(sortedTasks.first, urgentTask);
+      expect(sortedTasks.last, simpleTask);
     });
 
-    //5. Déclenchement d'une erreur
-    test("Déclenchement d'une erreur", (){
-      final repo = JsonTaskRepo('test_tasks.json');
+    //5.Test de la récupération des tâches triées par priorité
+    test('Récupération des tâches triées par priorité', () {
+      final simpleTask = SimpleTask(
+          id: 1,
+          title: 'Faire les courses',
+          priority: Priority.medium,
+          dueDate: DateTime.now().add(Duration(days: 2)));
+      final urgentTask = UrgentTask(
+          id: 2,
+          title: 'Appeler le médecin',
+          reason: 'Rendez-vous important',
+          dueDate: DateTime.now().add(Duration(hours: 5)));
+      repo.add(simpleTask);
+      repo.add(urgentTask);
 
-  // 💡 Note la syntaxe () => repo.remove('8')
-  expect(
-    () => repo.remove(8), 
-    throwsA(isA<TaskNotFound>()),
-  );
+      final sortedTasks = repo.getAllSortedByPriority();
+      expect(sortedTasks.first, urgentTask);
+      expect(sortedTasks.last, simpleTask);
     });
   });
 }

@@ -6,16 +6,15 @@ class UrgentTask extends Task {
   UrgentTask({
     required int id,
     required String title,
-    required Priority priority,
     required this.reason,
     bool isCompleted = false,
-    DateTime? date,
+    DateTime? dueDate,
   }) : super(
          id: id,
          title: title,
          priority: Priority.high, // Priorité élevée pour les tâches urgentes
          isCompleted: isCompleted,
-         date: date,
+         dueDate: dueDate,
        );
 
   @override
@@ -23,14 +22,15 @@ class UrgentTask extends Task {
     return{
       'id':id,
       'title':title,
-      'priority':priority.toString(),
-      'date':date?.toIso8601String(),
+      'type':'urgent',
+      'priority':priority.name,
+      'date':dueDate?.toIso8601String(),
       'isCompleted':isCompleted
     };
   }
 
   @override
   void create() {
-    print('Urgent task created: $title (Reason: $reason) at $date');
+    print('Urgent task created: $title (Reason: $reason) at $dueDate');
   }
 }

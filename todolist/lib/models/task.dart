@@ -5,14 +5,14 @@ abstract class Task {
   String title;
   Priority priority;
   bool isCompleted;
-  DateTime? date;
+  DateTime? dueDate;
 
   Task({
     required this.id,
     required this.title,
     required this.priority,
     this.isCompleted = false,
-    this.date,
+    this.dueDate,
   });
 
   void toggleCompleted() {
