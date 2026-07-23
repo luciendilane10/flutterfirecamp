@@ -27,4 +27,17 @@ class SimpleTask extends Task {
       'isCompleted': isCompleted
     };
   }
+
+  factory SimpleTask.fromJson(Map<String, dynamic> json) {
+    return SimpleTask(
+      id: json['id'] as int,
+      title: json['title'] as String,
+      priority: Priority.values.firstWhere(
+        (p) => p.name == json['priority'],
+        orElse: () => Priority.medium,
+      ),
+      dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate'] as String) : null,
+      isCompleted: json['isCompleted'] as bool? ?? false,
+    );
+  }
 }

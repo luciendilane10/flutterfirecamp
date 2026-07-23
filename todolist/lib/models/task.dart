@@ -19,9 +19,7 @@ abstract class Task {
     isCompleted = !isCompleted;
   }
 
-  void create() {
-    print('Task created: $title');
-  }
+
 
   Map<String, dynamic> toJson();
 }

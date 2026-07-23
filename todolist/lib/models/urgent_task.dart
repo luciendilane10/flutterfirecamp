@@ -16,6 +16,17 @@ class UrgentTask extends Task {
          isCompleted: isCompleted,
          dueDate: dueDate,
        );
+  
+  factory UrgentTask.fromJson(Map<String, dynamic> json) {
+    return UrgentTask(
+      id: json['id'] as int,
+      title: json['title'] as String,
+      reason: json['reason'] as String,
+      dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate'] as String) : null,
+      isCompleted: json['isCompleted'] as bool? ?? false,
+    );
+  }
+  
 
   @override
   Map<String, dynamic> toJson() {
@@ -29,8 +40,5 @@ class UrgentTask extends Task {
     };
   }
 
-  @override
-  void create() {
-    print('Urgent task created: $title (Reason: $reason) at $dueDate');
-  }
+  
 }

@@ -64,58 +64,33 @@ class JsonTaskRepo implements Repository<Task> {
 
  void _loadFromFile() {
   final file = File(filePath);
-  if (!file.existsSync()) return;
-
-  final content = file.readAsStringSync();
-  if (content.trim().isEmpty) return;
+  if (!file.existsSync()) {
+    _tasks = [];
+    return;
+  }
 
   try {
-    final List<dynamic> jsonList = jsonDecode(content);
+    final content = file.readAsStringSync();
+    if (content.trim().isEmpty) {
+      _tasks = [];
+      return;
+    }
 
-    _tasks = jsonList.map((item) {
-      final map = item as Map<String, dynamic>;
-
-      // On extrait l'ID en toute sécurité vers un int
-      final id = (map['id'] as num?)?.toInt() ?? 0;
-      final title = map['title']?.toString() ?? 'Tâche sans titre';
-      final reason = map['reason']?.toString() ?? 'Urgence non spécifiée';
-      final isCompleted = map['isCompleted'] == true;
-
-      //Extraction de la date en toute sécurité
-      final dueDateString = map['date']?.toString();
-      final dueDate = dueDateString != null ? DateTime.tryParse(dueDateString) : null;
-
-      // Conversion de la priorité en enum
-      final priorityString = map['priority']?.toString();
-      final priority = Priority.values.firstWhere(
-        (p) => p.name == priorityString,
-        orElse: () => Priority.low,
-      );
-      
-      // Création de la tâche en fonction du type
-      final type = map['type']?.toString(); 
-      if (type == 'urgent') {
-        return UrgentTask(
-          id: id,
-          title: title,
-          reason: reason,
-          isCompleted: isCompleted,
-          dueDate: dueDate,
-        );
+    final List<dynamic> jsonList = jsonDecode(content) as List<dynamic>;
+    _tasks = jsonList.map((json) {
+      final map = json as Map<String, dynamic>;
+      // On vérifie la présence de 'reason' pour différencier UrgentTask de SimpleTask
+      if (map.containsKey('reason') && map['reason'] != null) {
+        return UrgentTask.fromJson(map);
       } else {
-        return SimpleTask(
-          id: id,
-          title: title,
-          priority: priority,
-          isCompleted: isCompleted,
-          dueDate: dueDate,
-        );
+        return SimpleTask.fromJson(map);
       }
     }).toList();
   } catch (e) {
+    // Si le fichier est corrompu, on réinitialise proprement sans faire planter l'app
     _tasks = [];
   }
-  }
+}
 
   List<Task> getAllSortedByDate() {
     final sortedTasks = List<Task>.from(_tasks);
